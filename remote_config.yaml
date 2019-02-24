@@ -1,0 +1,65 @@
+---
+- name: Remote configuration
+  hosts: all
+  remote_user: root
+
+  tasks:
+  - name: Install required packages
+    package: name={{ item }}
+    with_items:
+      - vim
+      - git
+      - tar
+      - gcc
+      - make
+
+# Install tmux 2.8
+  - name: Create /root/tmux directory
+    file: path=/root/tmux state=directory
+
+  - name: Get tmux and its dependencies' tarballs
+    get_url: url={{ item }} dest="/root/tmux/"
+    with_items:
+      - "https://github.com/libevent/libevent/releases/download/release-2.1.8-stable/libevent-2.1.8-stable.tar.gz"
+      - "ftp://ftp.invisible-island.net/ncurses/ncurses-6.1.tar.gz"
+      - "https://github.com/tmux/tmux/releases/download/2.8/tmux-2.8.tar.gz"
+   
+  - name: Unarchive sources
+    unarchive: src=/root/tmux/{{ item }} dest=/root/tmux/ remote_src=yes
+    with_items:
+      - libevent-2.1.8-stable.tar.gz
+      - ncurses-6.1.tar.gz
+      - tmux-2.8.tar.gz
+
+  # TODO: Consider to be installed locally on shared machines
+  # Libs seems to be not installed in /usr/lib64 without --libdir flag
+  # Bug according to: https://github.com/varnish/varnish-modules/issues/72
+  - name: Configure the tmux dependencies
+    command: ./configure --prefix=/usr --libdir=/usr/lib64 chdir=/root/tmux/{{ item }}
+    with_items:
+      - libevent-2.1.8-stable
+      - ncurses-6.1
+
+  - name: Build the tmux dependencies
+    make: chdir=/root/tmux/{{ item }}
+    with_items:
+      - libevent-2.1.8-stable
+      - ncurses-6.1
+
+  - name: Install the tmux dependencies
+    make: chdir=/root/tmux/{{ item }} target=install
+    with_items:
+      - libevent-2.1.8-stable
+      - ncurses-6.1
+
+  - name: Configure tmux
+    command: ./configure --prefix=/usr --libdir=/usr/lib64 chdir=/root/tmux/tmux-2.8
+
+  - name: Build tmux
+    make: chdir=/root/tmux/tmux-2.8
+
+  - name: Install tmux
+    make: chdir=/root/tmux/tmux-2.8 target=install
+
+  - name: Remove tmux and its dependencies' sources
+    file: path=/root/tmux state=absent
