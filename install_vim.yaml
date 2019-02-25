@@ -1,0 +1,52 @@
+---
+- name: Install Vim
+  hosts: all
+  remote_user: centos
+  become: yes
+
+  tasks:
+#  - name: Install required packages
+#    package: name={{ item }}
+#    with_items:
+#      - git
+#      - tar
+#      - gcc
+#      - make
+#
+#
+#  # Takes most recent version from master - not very secure
+#  - name: Clone Vim repository
+#    git:
+#      repo: 'https://github.com/vim/vim.git'
+#      dest: /root/vim
+#
+#  - name: Build Vim
+#    make:
+#      chdir: /root/vim
+#  
+#  - name: Install Vim
+#    make:
+#      chdir: /root/vim
+#      target: install
+#
+#  - name: Remove Vim repository
+#    file:
+#      path: /root/vim
+#      state: absent
+      
+  - name: Copy .vimrc
+    copy:
+      src: /home/pawel/.vimrc
+      dest: /home/centos/.vimrc
+    become_user: centos
+
+  - name: Install Vundle
+    git:
+      repo: 'https://github.com/VundleVim/Vundle.vim'
+      dest: /home/centos/.vim/bundle/Vundle.vim
+    become_user: centos
+
+  - name: Install Vim plugins
+    command: vim +PluginInstall +qall
+    become_user: centos
+
