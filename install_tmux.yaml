@@ -1,14 +1,13 @@
 ---
 - name: Remote configuration
   hosts: all
-  remote_user: root
+  remote_user: centos
+  become: yes
 
   tasks:
   - name: Install required packages
     package: name={{ item }}
     with_items:
-      - vim
-      - git
       - tar
       - gcc
       - make

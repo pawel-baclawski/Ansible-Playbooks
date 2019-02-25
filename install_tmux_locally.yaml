@@ -1,0 +1,74 @@
+---
+- name: Remote configuration
+  hosts: all
+  remote_user: centos
+  become: yes
+
+  tasks:
+  - name: Install required packages
+    package: name={{ item }}
+    with_items:
+      - tar
+      - gcc
+      - make
+
+# Install tmux 2.8
+  - name: Create /root/tmux directory
+    file: path=/root/tmux state=directory
+
+  - name: Get tmux and its dependencies' tarballs
+    get_url: url={{ item }} dest="/root/tmux/"
+    with_items:
+      - "https://github.com/libevent/libevent/releases/download/release-2.1.8-stable/libevent-2.1.8-stable.tar.gz"
+      - "ftp://ftp.invisible-island.net/ncurses/ncurses-6.1.tar.gz"
+      - "https://github.com/tmux/tmux/releases/download/2.8/tmux-2.8.tar.gz"
+   
+  - name: Unarchive sources
+    unarchive: src=/root/tmux/{{ item }} dest=/root/tmux/ remote_src=yes
+    with_items:
+      - libevent-2.1.8-stable.tar.gz
+      - ncurses-6.1.tar.gz
+      - tmux-2.8.tar.gz
+
+  - name: Configure the tmux dependencies
+    command: ./configure chdir=/root/tmux/{{ item }}
+    with_items:
+      - libevent-2.1.8-stable
+      - ncurses-6.1
+
+  - name: Build the tmux dependencies
+    make: chdir=/root/tmux/{{ item }}
+    with_items:
+      - libevent-2.1.8-stable
+      - ncurses-6.1
+
+  - name: Install the tmux dependencies
+    make: chdir=/root/tmux/{{ item }} target=install
+    with_items:
+      - libevent-2.1.8-stable
+      - ncurses-6.1
+
+  - name: Configure tmux
+    command: ./configure chdir=/root/tmux/tmux-2.8
+
+  - name: Build tmux
+    make: chdir=/root/tmux/tmux-2.8
+
+  - name: Install tmux
+    make: chdir=/root/tmux/tmux-2.8 target=install
+
+  - name: Remove tmux and its dependencies' sources
+    file: path=/root/tmux state=absent
+
+  # Considered not secure according to https://unix.stackexchange.com/a/357867
+  - name: Add /usr/local/lib to search path
+    shell: echo '/usr/local/lib' >> /etc/ld.so.conf
+
+  - name: Update /etc/ld.so.cache file
+    command: ldconfig
+
+  - name: Copy .tmux.conf file to remote server
+    copy:
+      src: /home/pawel/.tmux.conf
+      dest: /home/centos/.tmux.conf
+    become_user: centos
