@@ -1,51 +1,51 @@
 ---
+# use -u flag instead of specifying user and --ask-pass if no SSH key pushed to remote machine
+# use --ask-become-pass flag
+
 - name: Install Vim
   hosts: all
-  remote_user: centos
-  become: yes
 
   tasks:
   - name: Install required packages
-    package: name={{ item }}
+    package: 
+      name: "{{ item }}"
     with_items:
       - git
-      - tar
       - gcc
       - make
+    become: yes
 
-  # Takes most recent version from master - not very secure
+    # Takes most recent version from master - not very secure TODO: specify version?
   - name: Clone Vim repository
     git:
-      repo: 'https://github.com/vim/vim.git'
-      dest: /root/vim
+      repo: "https://github.com/vim/vim.git"
+      dest: "{{ ansible_user_dir }}/vim"
 
   - name: Build Vim
     make:
-      chdir: /root/vim
+      chdir: "{{ ansible_user_dir }}/vim"
   
   - name: Install Vim
     make:
-      chdir: /root/vim
+      chdir: "{{ ansible_user_dir }}/vim"
       target: install
+    become: yes
 
   - name: Remove Vim repository
     file:
-      path: /root/vim
+      path: "{{ ansible_user_dir }}/vim"
       state: absent
-      
+
   - name: Copy .vimrc
     copy:
-      src: /home/pawel/.vimrc
-      dest: /home/centos/.vimrc
-    become_user: centos
+      src: dotfiles/.vimrc
+      dest: "{{ ansible_user_dir }}/.vimrc"
 
   - name: Install Vundle
     git:
-      repo: 'https://github.com/VundleVim/Vundle.vim'
-      dest: /home/centos/.vim/bundle/Vundle.vim
-    become_user: centos
+      repo: "https://github.com/VundleVim/Vundle.vim"
+      dest: "{{ ansible_user_dir }}/.vim/bundle/Vundle.vim"
 
   - name: Install Vim plugins
     command: vim +PluginInstall +qall
-    become_user: centos
 
