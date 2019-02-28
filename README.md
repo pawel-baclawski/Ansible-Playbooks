@@ -1,7 +1,12 @@
 # Ansible-Playbooks
 Those Ansible playbooks can be used for fast and simple remote environments configuration.
 
-Usage:
+To include the dotfiles submodule, clone the repository with:
+```
+git clone --recurse-submodules https://github.com/pawbac/Ansible-Playbooks.git
+```
+
+## Usage:
 ```
 ansible-playbook PLAYBOOK -i 'HOST_ADDR ,' -u USERNAME --ask-pass --ask-become-pass
 ```
